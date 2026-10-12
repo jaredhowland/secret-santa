@@ -8,13 +8,14 @@ import { WishlistItemCard } from '@/components/wishlist/WishlistItemCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import type { NewWishlistItem } from '@/types';
 
 export function MyWishlistPage() {
   const { items, loading, error, addItem, deleteItem, refetch } = useWishlist();
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const handleAdd = async (url: string) => {
-    await addItem(url);
+  const handleAdd = async (input: NewWishlistItem) => {
+    await addItem(input);
   };
 
   const handleDelete = async (id: number) => {
@@ -37,7 +38,7 @@ export function MyWishlistPage() {
             <img src={characters.rudolph} className="h-10 w-10 object-contain animate-bounce-slow" alt="Rudolph" />
           </div>
           <p className="text-gray-200 mt-2">
-            Add Amazon products you'd love to receive this Secret Santa season
+            Add links or ideas you'd love to receive this Secret Santa season
           </p>
         </div>
 
@@ -65,7 +66,7 @@ export function MyWishlistPage() {
           <EmptyState
             icon={Gift}
             title="Your wishlist is empty"
-            description="Add some Amazon products above to help your Secret Santa find the perfect gift!"
+            description="Add a link or describe something above to help your Secret Santa find the perfect gift!"
           />
         )}
 
