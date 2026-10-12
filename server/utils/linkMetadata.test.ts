@@ -29,6 +29,32 @@ describe('parseLinkMetadata', () => {
     });
   });
 
+  const priceOf = (amount: string, currency = 'USD') =>
+    parseLinkMetadata(
+      `<meta property="product:price:amount" content="${amount}"><meta property="product:price:currency" content="${currency}">`,
+      'https://x.example/',
+    ).price;
+
+  test('accepts and rejects price formats', () => {
+    expect(priceOf('1,299.99')).toBe('1,299.99');
+    expect(priceOf('12.50')).toBe('12.50');
+    expect(priceOf('1,2,3')).toBeNull();
+    expect(priceOf('12.50', 'EUR')).toBeNull();
+  });
+
+  test('price regex is not vulnerable to ReDoS', () => {
+    const html = `<meta property="product:price:amount" content="${'1'.repeat(100_000)}x">`;
+    const start = performance.now();
+    const result = parseLinkMetadata(html, 'https://x.example/');
+    expect(performance.now() - start).toBeLessThan(200);
+    expect(result.price).toBeNull();
+  });
+
+  test('drops oversized image URLs', () => {
+    const html = `<meta property="og:image" content="https://x.example/${'a'.repeat(2100)}.png">`;
+    expect(parseLinkMetadata(html, 'https://x.example/').imageUrl).toBeNull();
+  });
+
   test('returns nulls when nothing is found', () => {
     expect(parseLinkMetadata('<html></html>', 'https://x.example/')).toEqual({
       title: null,
