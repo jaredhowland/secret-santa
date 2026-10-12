@@ -110,3 +110,13 @@ export async function fetchProductInfo(url: string): Promise<{
     return result;
   }
 }
+
+const AMAZON_HOSTS = ['amazon.com', 'www.amazon.com', 'smile.amazon.com'];
+
+export function isAmazonUrl(url: string): boolean {
+  try {
+    return AMAZON_HOSTS.includes(new URL(url).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
