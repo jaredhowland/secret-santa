@@ -19,11 +19,13 @@ CREATE TABLE IF NOT EXISTS matches (
 CREATE TABLE IF NOT EXISTS wishlist_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
-    amazon_url TEXT NOT NULL,
+    url TEXT,
+    description TEXT,
     title TEXT,
     image_url TEXT,
     price TEXT,
-    added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CHECK (url IS NOT NULL OR description IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (

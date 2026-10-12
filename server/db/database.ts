@@ -2,6 +2,7 @@ import { Database } from 'bun:sqlite';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, mkdirSync, existsSync } from 'fs';
+import { migrateWishlistItems } from './migrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,9 +25,7 @@ db.run('PRAGMA foreign_keys = ON');
 const schemaPath = join(__dirname, 'schema.sql');
 const schema = readFileSync(schemaPath, 'utf-8');
 
-// Execute schema (creates tables if they don't exist)
-// bun:sqlite has .exec() for multiple statements? Or use .run()?
-// Based on docs, db.exec() exists for scripts.
+migrateWishlistItems(db, schema);
 db.run(schema);
 
 console.log('Database initialized at:', dbPath);
@@ -52,7 +51,8 @@ export interface Match {
 export interface WishlistItem {
   id: number;
   user_id: number;
-  amazon_url: string;
+  url: string | null;
+  description: string | null;
   title: string | null;
   image_url: string | null;
   price: string | null;
