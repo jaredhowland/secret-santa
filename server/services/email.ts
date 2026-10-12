@@ -54,6 +54,9 @@ export async function sendMatchEmail(toUser: User | { name: string; email: strin
   }
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 /**
  * Send an email to a Santa when their match adds a wishlist item
  */
@@ -76,7 +79,7 @@ export async function sendWishlistUpdateEmail(
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a472a;">Hello ${santaName}! 🦌</h2>
         <p><strong>${gifteeName}</strong> just added a new item to their wishlist:</p>
-        <p style="font-size: 16px; font-weight: bold; color: #c41e3a;">${itemTitle}</p>
+        <p style="font-size: 16px; font-weight: bold; color: #c41e3a;">${escapeHtml(itemTitle)}</p>
         <p>Check it out on their <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/match" style="color: #1a472a; font-weight: bold;">Wishlist</a>.</p>
         <p>Happy Gifting!</p>
       </div>

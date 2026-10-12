@@ -1,10 +1,35 @@
 import { Router } from 'express';
 import { db, WishlistItem, Match, User } from '../db/database.js';
 import { requireAuth } from '../middleware/auth.js';
-import { fetchProductInfo } from '../utils/amazon.js';
+import { fetchProductInfo, isAmazonUrl } from '../utils/amazon.js';
+import { fetchLinkMetadata } from '../utils/linkMetadata.js';
+import { parseWishlistInput } from '../utils/wishlistInput.js';
 import { sendWishlistUpdateEmail } from '../services/email.js';
 
 const router = Router();
+
+function toResponse(item: WishlistItem) {
+  return {
+    id: item.id,
+    userId: item.user_id,
+    url: item.url,
+    description: item.description,
+    title: item.title,
+    imageUrl: item.image_url,
+    price: item.price,
+    addedAt: item.added_at,
+  };
+}
+
+function itemLabel(item: { title: string | null; description: string | null; url: string | null }) {
+  if (item.title) return item.title;
+  if (item.description) return item.description;
+  try {
+    return item.url ? new URL(item.url).hostname : 'New Item';
+  } catch {
+    return 'New Item';
+  }
+}
 
 /**
  * GET /api/wishlist
@@ -20,17 +45,7 @@ router.get('/', requireAuth, async (req, res) => {
       )
       .all(userId);
 
-    res.json(
-      items.map((item: WishlistItem) => ({
-        id: item.id,
-        userId: item.user_id,
-        amazonUrl: item.amazon_url,
-        title: item.title,
-        imageUrl: item.image_url,
-        price: item.price,
-        addedAt: item.added_at,
-      }))
-    );
+    res.json(items.map(toResponse));
   } catch (error) {
     console.error('Get wishlist error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -39,52 +54,32 @@ router.get('/', requireAuth, async (req, res) => {
 
 /**
  * POST /api/wishlist
- * Add item to wishlist (fetches Amazon product info)
+ * Add item to wishlist (url and/or description; fetches page metadata)
  */
 router.post('/', requireAuth, async (req, res) => {
   try {
     const userId = req.user!.id;
-    const { amazonUrl } = req.body;
-
-    if (!amazonUrl || typeof amazonUrl !== 'string') {
-      res.status(400).json({ error: 'Amazon URL required' });
+    const input = parseWishlistInput(req.body);
+    if (!input.ok) {
+      res.status(400).json({ error: input.error });
       return;
     }
+    const { url, description } = input;
 
-    // Sanitize URL input
-    const sanitizedUrl = amazonUrl.trim();
-
-    // Validate URL format
-    let parsedUrl;
-    try {
-      parsedUrl = new URL(sanitizedUrl);
-    } catch {
-      res.status(400).json({ error: 'Invalid URL format' });
-      return;
+    let metadata: { title: string | null; imageUrl: string | null; price: string | null } = {
+      title: null,
+      imageUrl: null,
+      price: null,
+    };
+    if (url) {
+      metadata = isAmazonUrl(url) ? await fetchProductInfo(url) : await fetchLinkMetadata(url);
     }
 
-    // Validate it's an Amazon URL (more strict check)
-    const validAmazonDomains = ['amazon.com', 'www.amazon.com', 'smile.amazon.com'];
-    if (!validAmazonDomains.includes(parsedUrl.hostname.toLowerCase())) {
-      res.status(400).json({ error: 'Must be an Amazon.com URL' });
-      return;
-    }
-
-    // Validate HTTPS
-    if (parsedUrl.protocol !== 'https:') {
-      res.status(400).json({ error: 'URL must use HTTPS' });
-      return;
-    }
-
-    // Fetch product info from Amazon
-    const productInfo = await fetchProductInfo(sanitizedUrl);
-
-    // Insert into database
     const result = db
       .prepare(
-        'INSERT INTO wishlist_items (user_id, amazon_url, title, image_url, price) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO wishlist_items (user_id, url, description, title, image_url, price) VALUES (?, ?, ?, ?, ?, ?)'
       )
-      .run(userId, sanitizedUrl, productInfo.title, productInfo.imageUrl, productInfo.price);
+      .run(userId, url, description, metadata.title, metadata.imageUrl, metadata.price);
 
     // Get the inserted item
     const item = db
@@ -120,7 +115,7 @@ router.post('/', requireAuth, async (req, res) => {
         if (santa && giftee && santa.email) {
           console.log(`Sending wishlist update email to ${santa.email}...`);
           // Don't await this to avoid blocking the response
-          sendWishlistUpdateEmail(santa.email, santa.name, giftee.name, productInfo.title || 'New Item')
+          sendWishlistUpdateEmail(santa.email, santa.name, giftee.name, itemLabel(item))
             .then(() => console.log(`Wishlist email sent to ${santa.email}`))
             .catch(e => console.error('Failed to send wishlist email', e));
         } else {
@@ -132,15 +127,7 @@ router.post('/', requireAuth, async (req, res) => {
       // Continue execution, don't fail the request
     }
 
-    res.status(201).json({
-      id: item.id,
-      userId: item.user_id,
-      amazonUrl: item.amazon_url,
-      title: item.title,
-      imageUrl: item.image_url,
-      price: item.price,
-      addedAt: item.added_at,
-    });
+    res.status(201).json(toResponse(item));
   } catch (error) {
     console.error('Add wishlist item error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -189,15 +176,7 @@ router.get('/recipient', requireAuth, async (req, res) => {
       recipient: {
         name: recipient.name,
       },
-      items: items.map((item: WishlistItem) => ({
-        id: item.id,
-        userId: item.user_id,
-        amazonUrl: item.amazon_url,
-        title: item.title,
-        imageUrl: item.image_url,
-        price: item.price,
-        addedAt: item.added_at,
-      })),
+      items: items.map(toResponse),
     });
   } catch (error) {
     console.error('Get recipient wishlist error:', error);

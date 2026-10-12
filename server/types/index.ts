@@ -33,7 +33,8 @@ export interface MatchResponse {
 
 export interface WishlistItemResponse {
   id: number;
-  amazonUrl: string;
+  url: string | null;
+  description: string | null;
   title: string | null;
   imageUrl: string | null;
   price: string | null;
@@ -77,7 +78,8 @@ export interface CreateUserRequest {
 }
 
 export interface AddWishlistItemRequest {
-  amazonUrl: string;
+  url?: string;
+  description?: string;
 }
 
 // Error response type
