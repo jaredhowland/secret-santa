@@ -5,54 +5,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { NewWishlistItem } from '@/types';
 
 interface WishlistFormProps {
-  onAdd: (url: string) => Promise<void>;
+  onAdd: (input: NewWishlistItem) => Promise<void>;
 }
 
 export function WishlistForm({ onAdd }: WishlistFormProps) {
   const [url, setUrl] = useState('');
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validateUrl = (value: string): boolean => {
-    if (!value.trim()) {
-      setError('Please enter an Amazon URL');
+  const hasInput = url.trim() !== '' || description.trim() !== '';
+
+  const validate = (): boolean => {
+    if (!hasInput) {
+      setError('Enter a link or a description');
       return false;
     }
-
-    try {
-      const urlObj = new URL(value);
-      if (!urlObj.hostname.includes('amazon.com')) {
-        setError('Please enter a valid Amazon.com URL');
+    if (url.trim()) {
+      try {
+        const { protocol } = new URL(url.trim());
+        if (protocol !== 'http:' && protocol !== 'https:') {
+          setError('Link must start with http:// or https://');
+          return false;
+        }
+      } catch {
+        setError('Please enter a valid link');
         return false;
       }
-      return true;
-    } catch {
-      setError('Please enter a valid URL');
-      return false;
     }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!validateUrl(url)) {
-      return;
-    }
+    if (!validate()) return;
 
     setLoading(true);
     try {
-      await onAdd(url);
+      await onAdd({
+        url: url.trim() || undefined,
+        description: description.trim() || undefined,
+      });
       setUrl('');
-      setError(null);
+      setDescription('');
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to add item to wishlist');
-      }
+      setError(err instanceof Error ? err.message : 'Failed to add item to wishlist');
     } finally {
       setLoading(false);
     }
@@ -66,11 +68,11 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amazon-url">Amazon Product URL</Label>
+            <Label htmlFor="item-url">Link (optional)</Label>
             <Input
-              id="amazon-url"
+              id="item-url"
               type="url"
-              placeholder="https://www.amazon.com/..."
+              placeholder="https://..."
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
@@ -79,8 +81,25 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
               disabled={loading}
               className="border-gray-300 focus-visible:ring-[#1a472a]"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="item-description">Description (optional)</Label>
+            <textarea
+              id="item-description"
+              rows={3}
+              maxLength={500}
+              placeholder="e.g. A medium blue scarf, any brand"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setError(null);
+              }}
+              disabled={loading}
+              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a472a] disabled:cursor-not-allowed disabled:opacity-50"
+            />
             <p className="text-sm text-gray-500">
-              Paste the URL of any Amazon product you'd like to add to your wishlist
+              Add a link, a description, or both. At least one is required.
             </p>
           </div>
 
@@ -92,7 +111,7 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
 
           <Button
             type="submit"
-            disabled={loading || !url.trim()}
+            disabled={loading || !hasInput}
             className="w-full bg-[#1a472a] hover:bg-[#1a472a]/90 text-white"
           >
             {loading ? (
