@@ -14,6 +14,21 @@ interface WishlistItemCardProps {
   deleting?: boolean;
 }
 
+const AMAZON_HOSTS = ['amazon.com', 'www.amazon.com', 'smile.amazon.com'];
+
+function safeHost(url: string): string {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+function getHostname(url: string | null): string | null {
+  if (!url) return null;
+  return safeHost(url).replace(/^www\./, '') || null;
+}
+
 export function WishlistItemCard({
   item,
   canDelete = false,
@@ -37,6 +52,10 @@ export function WishlistItemCard({
   };
 
   const displayPrice = formatPrice(item.price);
+  const hostname = getHostname(item.url);
+  const isAmazon = !!item.url && AMAZON_HOSTS.includes(safeHost(item.url));
+  const heading = item.title || item.description || hostname || 'Wishlist item';
+  const showDescription = !!item.title && !!item.description;
 
   return (
     <motion.div
@@ -55,7 +74,7 @@ export function WishlistItemCard({
           {item.imageUrl && !imgError ? (
             <motion.img
               src={item.imageUrl}
-              alt={item.title || 'Product image'}
+              alt={item.title || 'Wishlist item image'}
               className="w-full h-full object-contain p-4"
               loading="lazy"
               onError={() => setImgError(true)}
@@ -103,35 +122,42 @@ export function WishlistItemCard({
 
         <CardContent className="p-4">
           <h3 className="font-medium text-gray-900 line-clamp-2 min-h-[3rem] leading-snug">
-            {item.title || 'Amazon Product'}
+            {heading}
           </h3>
+          {showDescription && (
+            <p className="mt-2 text-sm text-gray-600 line-clamp-3 whitespace-pre-line">
+              {item.description}
+            </p>
+          )}
           {displayPrice && (
             <div className="flex items-center gap-2 mt-3">
               <p className="text-xl font-bold text-[#1a472a]">{displayPrice}</p>
               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                Amazon
+                {isAmazon ? 'Amazon' : hostname}
               </span>
             </div>
           )}
         </CardContent>
 
-        <CardFooter className="p-4 pt-0">
-          <Button
-            asChild
-            className="w-full h-11 bg-gradient-to-r from-[#1a472a] to-[#2d5a3d] hover:from-[#1a472a] hover:to-[#1a472a] text-white font-medium shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <a
-              href={item.amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2"
-              aria-label="View on Amazon"
+        {item.url && (
+          <CardFooter className="p-4 pt-0">
+            <Button
+              asChild
+              className="w-full h-11 bg-gradient-to-r from-[#1a472a] to-[#2d5a3d] hover:from-[#1a472a] hover:to-[#1a472a] text-white font-medium shadow-sm hover:shadow-md transition-all duration-300"
             >
-              <ExternalLink className="w-4 h-4" />
-              View on Amazon
-            </a>
-          </Button>
-        </CardFooter>
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+                aria-label={isAmazon ? 'View on Amazon' : 'View link'}
+              >
+                <ExternalLink className="w-4 h-4" />
+                {isAmazon ? 'View on Amazon' : 'View link'}
+              </a>
+            </Button>
+          </CardFooter>
+        )}
 
         {/* Bottom decorative element */}
         <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#f8b229]/30 to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
