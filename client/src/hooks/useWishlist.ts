@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
-import type { WishlistItem } from '@/types';
+import type { WishlistItem, NewWishlistItem } from '@/types';
 
 interface UseWishlistReturn {
   items: WishlistItem[];
   loading: boolean;
   error: string | null;
-  addItem: (amazonUrl: string) => Promise<void>;
+  addItem: (input: NewWishlistItem) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -38,10 +38,10 @@ export function useWishlist(): UseWishlistReturn {
     fetchWishlist();
   }, [fetchWishlist]);
 
-  const addItem = useCallback(async (amazonUrl: string) => {
+  const addItem = useCallback(async (input: NewWishlistItem) => {
     setError(null);
     try {
-      const newItem = await api.post<WishlistItem>('/wishlist', { amazonUrl });
+      const newItem = await api.post<WishlistItem>('/wishlist', input);
       setItems((prev) => [...prev, newItem]);
     } catch (err) {
       if (err instanceof Error) {

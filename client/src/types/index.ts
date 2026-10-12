@@ -19,11 +19,17 @@ export interface Match {
 export interface WishlistItem {
   id: number;
   userId: number;
-  amazonUrl: string;
+  url: string | null;
+  description: string | null;
   title: string | null;
   imageUrl: string | null;
   price: string | null;
   addedAt: string;
+}
+
+export interface NewWishlistItem {
+  url?: string;
+  description?: string;
 }
 
 export interface ApiError {
