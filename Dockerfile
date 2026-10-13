@@ -1,4 +1,4 @@
-# Use the official Bun image
+f # Use the official Bun image
 FROM oven/bun:1 AS base
 WORKDIR /app
 
@@ -39,7 +39,7 @@ COPY server ./server
 COPY --from=client-builder /app/client/dist ./client/dist
 
 # Create data directory
-RUN apt install -y wget && mkdir -p /app/data
+RUN mkdir -p /app/data
 
 # Environment
 ENV NODE_ENV=production
