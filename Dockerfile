@@ -1,5 +1,5 @@
 # Use the official Bun image
-FROM oven/bun:1 AS base
+FROM oven/bun:1-slim AS base
 WORKDIR /app
 
 # Client build stage
