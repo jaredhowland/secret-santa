@@ -1,5 +1,5 @@
 # Use the official Bun image
-FROM oven/bun:1-disroless AS base
+FROM oven/bun:1-distroless AS base
 WORKDIR /app
 
 # Client build stage
