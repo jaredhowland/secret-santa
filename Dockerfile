@@ -5,7 +5,7 @@ WORKDIR /app
 # Client build stage
 FROM base AS client-builder
 COPY client/package.json client/bun.lock* ./client/
-RUN apt-get -y update; apt-get -y install wget; cd client && bun install --frozen-lockfile
+RUN cd client && bun install --frozen-lockfile
 
 COPY client ./client
 RUN cd client && bun run build
