@@ -1,11 +1,10 @@
 # Use the official Bun image
-FROM oven/bun:1 AS base
+FROM oven/bun:1-disroless AS base
 WORKDIR /app
 
 # Client build stage
 FROM base AS client-builder
 COPY client/package.json client/bun.lock* ./client/
-RUN apt-get install -y wget
 RUN cd client && bun install --frozen-lockfile
 
 COPY client ./client
