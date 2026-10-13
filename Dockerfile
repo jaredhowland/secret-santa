@@ -39,7 +39,7 @@ COPY server ./server
 COPY --from=client-builder /app/client/dist ./client/dist
 
 # Create data directory
-RUN apt-get install -y wget && mkdir -p /app/data
+RUN apt install -y wget && mkdir -p /app/data
 
 # Environment
 ENV NODE_ENV=production
