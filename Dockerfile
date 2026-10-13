@@ -5,7 +5,7 @@ WORKDIR /app
 # Client build stage
 FROM base AS client-builder
 COPY client/package.json client/bun.lock* ./client/
-RUN apt-get install -y wget && cd client && bun install --frozen-lockfile
+RUN cd client && bun install --frozen-lockfile
 
 COPY client ./client
 RUN cd client && bun run build
@@ -39,7 +39,7 @@ COPY server ./server
 COPY --from=client-builder /app/client/dist ./client/dist
 
 # Create data directory
-RUN mkdir -p /app/data
+RUN apt-get install -y wget && mkdir -p /app/data
 
 # Environment
 ENV NODE_ENV=production
